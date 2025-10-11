@@ -23,10 +23,6 @@
   [self.popover showRelativeToRect:self.item.button.bounds ofView:self.item.button preferredEdge:NSMaxYEdge];
 }
 
-- (void)openSettings {
-  NSLog(@"openSettings");
-}
-
 @end
 
 @implementation MyDelegate (PrivateMethods)
