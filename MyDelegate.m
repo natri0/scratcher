@@ -1,5 +1,6 @@
 #include "MyDelegate.h"
 #import <Cocoa/Cocoa.h>
+#import "SettingsManager.h"
 
 @interface MyDelegate (PrivateMethods)
 
@@ -12,6 +13,7 @@
 @implementation MyDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+  [SettingsManager.sharedInstance load];
   [self setupUi];
   [self setupMenu];
   [self setupGlobalHotkey];
@@ -86,11 +88,14 @@
 - (void)setupGlobalHotkey {
   if (AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)@{ (__bridge NSString *)kAXTrustedCheckOptionPrompt:@YES })) {
     [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskKeyUp handler:^(NSEvent *ev) {
-      if ((ev.modifierFlags & (NSEventModifierFlagControl | NSEventModifierFlagOption)) && ev.keyCode == 40 /* K */) {
+      Keybind *kbOpen = SettingsManager.sharedInstance.kbOpen;
+      Keybind *kbOpenAndPaste = SettingsManager.sharedInstance.kbOpenAndPaste;
+
+      if (((ev.modifierFlags & kbOpen.modifiers) == kbOpen.modifiers) && ev.keyCode == kbOpen.keycode) {
         [self openPopover];
       }
 
-      if ((ev.modifierFlags & (NSEventModifierFlagControl | NSEventModifierFlagOption)) && ev.keyCode == 37 /* L */) {
+      if (((ev.modifierFlags & kbOpenAndPaste.modifiers) == kbOpenAndPaste.modifiers) && ev.keyCode == kbOpenAndPaste.keycode) {
         [self openPopover];
         [self.field paste:ev];
       }
