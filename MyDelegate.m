@@ -8,9 +8,14 @@
 - (void)setupMenu;
 - (void)setupGlobalHotkey;
 
+- (void)updateButtonTitles;
+
 @end
 
-@implementation MyDelegate
+@implementation MyDelegate {
+  NSButton *kbOpenBtn;
+  NSButton *kbOpenPasteBtn;
+}
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
   [SettingsManager.sharedInstance load];
@@ -43,8 +48,18 @@
   self.field.richText = NO;
   self.field.verticallyResizable = YES;
 
-  NSButton *kbOpenBtn = [NSButton buttonWithTitle:@"Open: ⌃⌥K" target:self action:@selector(changeKbOpen)];
-  NSButton *kbOpenPasteBtn = [NSButton buttonWithTitle:@"Open & Paste: ⌃⌥L" target:self action:@selector(changeKbOpenPaste)];
+  kbOpenBtn = [NSButton buttonWithTitle:@"Open: ⌃⌥K" target:self action:@selector(changeKbOpen)];
+  kbOpenPasteBtn = [NSButton buttonWithTitle:@"Open & Paste: ⌃⌥L" target:self action:@selector(changeKbOpenPaste)];
+
+  [SettingsManager.sharedInstance addObserver:self
+                                  forKeyPath:@"kbOpen"
+                                     options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial)
+                                     context:NULL];
+
+  [SettingsManager.sharedInstance addObserver:self
+                                  forKeyPath:@"kbOpenAndPaste"
+                                     options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial)
+                                     context:NULL];
 
   kbOpenBtn.bezelStyle = kbOpenPasteBtn.bezelStyle = NSBezelStyleRounded;
 
@@ -133,6 +148,17 @@
       }
     }];
   }
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *, id> *)change context:(void *)context {
+  if (object == SettingsManager.sharedInstance) {
+    dispatch_async(dispatch_get_main_queue(), ^{ [self updateButtonTitles]; });
+  }
+}
+
+- (void)updateButtonTitles {
+  kbOpenBtn.title = [NSString stringWithFormat:@"Open: %@", SettingsManager.sharedInstance.kbOpen];
+  kbOpenPasteBtn.title = [NSString stringWithFormat:@"Open & Paste: %@", SettingsManager.sharedInstance.kbOpenAndPaste];
 }
 
 @end
