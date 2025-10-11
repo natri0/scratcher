@@ -1,0 +1,82 @@
+#include "MyDelegate.h"
+#import <Cocoa/Cocoa.h>
+
+@interface MyDelegate (PrivateMethods)
+
+- (void)setupUi;
+- (void)setupEditMenu;
+- (void)setupGlobalHotkey;
+
+@end
+
+@implementation MyDelegate
+
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
+  [self setupUi];
+  [self setupEditMenu];
+  [self setupGlobalHotkey];
+}
+
+- (void)openPopover {
+  [self.popover showRelativeToRect:self.item.button.bounds ofView:self.item.button preferredEdge:NSMaxYEdge];
+}
+
+@end
+
+@implementation MyDelegate (PrivateMethods)
+
+- (void)setupUi {
+  self.item = [NSStatusBar.systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
+  self.item.button.image = [NSImage imageWithSystemSymbolName:@"character.textbox" accessibilityDescription:@"pasteboard"];
+  self.item.button.action = @selector(openPopover);
+
+  NSMutableParagraphStyle *placeholderStyle = [[NSMutableParagraphStyle alloc] init];
+  placeholderStyle.alignment = NSTextAlignmentCenter;
+  NSAttributedString *placeholder = [[NSAttributedString alloc] initWithString:@"Write (or paste) something here..."
+                                                                    attributes:@{ NSParagraphStyleAttributeName:placeholderStyle,
+                                                                                 NSForegroundColorAttributeName:NSColor.systemGrayColor}];
+
+  self.field = [[NSTextView alloc] initWithFrame:NSMakeRect(10, 10, 280, 180)];
+  [self.field setPlaceholderAttributedString:placeholder];
+  self.field.richText = NO;
+
+  NSViewController *vc = [[NSViewController alloc] init];
+  vc.view = self.field;
+
+  self.popover = [[NSPopover alloc] init];
+  self.popover.contentSize = CGSizeMake(300, 200);
+  self.popover.behavior = NSPopoverBehaviorTransient;
+  self.popover.contentViewController = vc;
+}
+
+- (void)setupEditMenu {
+  NSMenu *main = [[NSMenu alloc] init];
+  NSMenuItem *editItem = [[NSMenuItem alloc] init];
+  NSMenu *edit = [[NSMenu alloc] initWithTitle:@"Edit"];
+
+  [edit addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];
+  [edit addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"];
+  [edit addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"];
+  [edit addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+  
+  editItem.submenu = edit;
+  [main addItem:editItem];
+  NSApp.mainMenu = main;
+}
+
+- (void)setupGlobalHotkey {
+  if (AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)@{ (__bridge NSString *)kAXTrustedCheckOptionPrompt:@YES })) {
+    [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskKeyUp handler:^(NSEvent *ev) {
+      if ((ev.modifierFlags & (NSEventModifierFlagControl | NSEventModifierFlagOption)) && ev.keyCode == 40 /* K */) {
+        [self openPopover];
+      }
+
+      if ((ev.modifierFlags & (NSEventModifierFlagControl | NSEventModifierFlagOption)) && ev.keyCode == 37 /* L */) {
+        [self openPopover];
+        [self.field paste:ev];
+      }
+    }];
+  }
+}
+
+@end
