@@ -2,6 +2,10 @@
 #import <Cocoa/Cocoa.h>
 #import "SettingsManager.h"
 
+@interface NSTextView (SetPlaceholder)
+- (void)setPlaceholderAttributedString:(NSAttributedString *)placeholder;
+@end
+
 @interface MyDelegate (PrivateMethods)
 
 - (void)setupUi;
