@@ -9,5 +9,6 @@
 @property (strong, nonatomic) NSTextView *field;
 
 - (void)openPopover;
+- (void)openSettings;
 
 @end

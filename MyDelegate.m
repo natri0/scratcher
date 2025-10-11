@@ -4,7 +4,7 @@
 @interface MyDelegate (PrivateMethods)
 
 - (void)setupUi;
-- (void)setupEditMenu;
+- (void)setupMenu;
 - (void)setupGlobalHotkey;
 
 @end
@@ -13,12 +13,16 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
   [self setupUi];
-  [self setupEditMenu];
+  [self setupMenu];
   [self setupGlobalHotkey];
 }
 
 - (void)openPopover {
   [self.popover showRelativeToRect:self.item.button.bounds ofView:self.item.button preferredEdge:NSMaxYEdge];
+}
+
+- (void)openSettings {
+  NSLog(@"openSettings");
 }
 
 @end
@@ -49,8 +53,24 @@
   self.popover.contentViewController = vc;
 }
 
-- (void)setupEditMenu {
+- (void)setupMenu {
   NSMenu *main = [[NSMenu alloc] init];
+  [self setupAppMenu:main];
+  [self setupEditMenu:main];
+  NSApp.mainMenu = main;
+}
+
+- (void)setupAppMenu:(NSMenu *)main {
+  NSMenuItem *appItem = [[NSMenuItem alloc] init];
+  NSMenu *app = [[NSMenu alloc] initWithTitle:@""];
+
+  [app addItemWithTitle:@"Settings" action:@selector(openSettings) keyEquivalent:@","].target = self;
+
+  appItem.submenu = app;
+  [main addItem:appItem];
+}
+
+- (void)setupEditMenu:(NSMenu *)main {
   NSMenuItem *editItem = [[NSMenuItem alloc] init];
   NSMenu *edit = [[NSMenu alloc] initWithTitle:@"Edit"];
 
@@ -61,7 +81,6 @@
   
   editItem.submenu = edit;
   [main addItem:editItem];
-  NSApp.mainMenu = main;
 }
 
 - (void)setupGlobalHotkey {
