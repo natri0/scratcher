@@ -8,6 +8,8 @@
 - (void)setupMenu;
 - (void)setupGlobalHotkey;
 
+- (void)changeKbOpen;
+- (void)changeKbOpenPaste;
 - (void)updateButtonTitles;
 
 @end
@@ -159,6 +161,40 @@
 - (void)updateButtonTitles {
   kbOpenBtn.title = [NSString stringWithFormat:@"Open: %@", SettingsManager.sharedInstance.kbOpen];
   kbOpenPasteBtn.title = [NSString stringWithFormat:@"Open & Paste: %@", SettingsManager.sharedInstance.kbOpenAndPaste];
+}
+
+- (void)changeKbOpen {
+  [self listenForKeybindWithSelector:@selector(setKbOpen:) button:kbOpenBtn];
+}
+
+- (void)changeKbOpenPaste {
+  [self listenForKeybindWithSelector:@selector(setKbOpenAndPaste:) button:kbOpenPasteBtn];
+}
+
+- (void)listenForKeybindWithSelector:(SEL)sel button:(NSButton *)button {
+  NSString *originalTitle = button.title;
+  button.title = @"Press keys...";
+
+  __block id monitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown handler:^(NSEvent *ev) {
+    switch (ev.keyCode) {
+      case 53 /* Esc */:
+        [NSEvent removeMonitor:monitor];
+        button.title = originalTitle;
+        break;
+      case 54: case 55: case 56: case 58:
+      case 59: case 60: case 61: case 62:
+        break; // skip events consisting of just a mod key
+      default: {
+        [NSEvent removeMonitor:monitor];
+        [SettingsManager.sharedInstance performSelector:sel withObject:[Keybind withModifiers:ev.modifierFlags keyCode:ev.keyCode]];
+      }
+    }
+
+    [SettingsManager.sharedInstance save];
+    return (NSEvent *)nil;
+  }];
+
+  [self.popover.contentViewController.view.window makeFirstResponder:self.popover.contentViewController.view];
 }
 
 @end
