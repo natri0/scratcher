@@ -42,12 +42,48 @@
                                                                     attributes:@{ NSParagraphStyleAttributeName:placeholderStyle,
                                                                                  NSForegroundColorAttributeName:NSColor.systemGrayColor}];
 
-  self.field = [[NSTextView alloc] initWithFrame:NSMakeRect(10, 10, 280, 180)];
+  self.field = [[NSTextView alloc] initWithFrame:NSMakeRect(10, 30, 280, 0)];
   [self.field setPlaceholderAttributedString:placeholder];
   self.field.richText = NO;
+  self.field.verticallyResizable = YES;
+
+  NSButton *kbOpenBtn = [NSButton buttonWithTitle:@"Open: ⌃⌥K" target:self action:@selector(changeKbOpen)];
+  NSButton *kbOpenPasteBtn = [NSButton buttonWithTitle:@"Open & Paste: ⌃⌥L" target:self action:@selector(changeKbOpenPaste)];
+
+  kbOpenBtn.bezelStyle = kbOpenPasteBtn.bezelStyle = NSBezelStyleRounded;
+
+  NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(10, 30, 280, 160)];
+  scroll.documentView = self.field;
+  scroll.hasVerticalScroller = YES;
+
+  NSView *container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 300, 200)];
+
+  scroll.translatesAutoresizingMaskIntoConstraints = NO;
+  kbOpenBtn.translatesAutoresizingMaskIntoConstraints = NO;
+  kbOpenPasteBtn.translatesAutoresizingMaskIntoConstraints = NO;
+  container.translatesAutoresizingMaskIntoConstraints = NO;
+
+  [container addSubview:scroll];
+  [container addSubview:kbOpenBtn];
+  [container addSubview:kbOpenPasteBtn];
+
+  [NSLayoutConstraint activateConstraints:@[
+    [scroll.topAnchor constraintEqualToAnchor:container.topAnchor constant:10],
+    [scroll.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:10],
+    [scroll.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-10],
+    [scroll.bottomAnchor constraintEqualToAnchor:kbOpenBtn.topAnchor constant:-10],
+
+    [kbOpenBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:10],
+    [kbOpenBtn.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-10],
+    [kbOpenBtn.widthAnchor constraintEqualToConstant:100],
+
+    [kbOpenPasteBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-10],
+    [kbOpenPasteBtn.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-10],
+    [kbOpenPasteBtn.widthAnchor constraintEqualToConstant:140],
+  ]];
 
   NSViewController *vc = [[NSViewController alloc] init];
-  vc.view = self.field;
+  vc.view = container;
 
   self.popover = [[NSPopover alloc] init];
   self.popover.contentSize = CGSizeMake(300, 200);
