@@ -14,6 +14,7 @@
 
 - (void)changeKbOpen;
 - (void)changeKbOpenPaste;
+- (void)showFontPanel;
 - (void)updateButtonTitles;
 
 @end
@@ -21,6 +22,7 @@
 @implementation MyDelegate {
   NSButton *kbOpenBtn;
   NSButton *kbOpenPasteBtn;
+  NSButton *changeFontBtn;
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
@@ -56,6 +58,7 @@
 
   kbOpenBtn = [NSButton buttonWithTitle:@"Open: ⌃⌥K" target:self action:@selector(changeKbOpen)];
   kbOpenPasteBtn = [NSButton buttonWithTitle:@"Open & Paste: ⌃⌥L" target:self action:@selector(changeKbOpenPaste)];
+  changeFontBtn = [NSButton buttonWithTitle:@"Font: Helvetica 11" target:self action:@selector(showFontPanel)];
 
   [SettingsManager.sharedInstance addObserver:self
                                   forKeyPath:@"kbOpen"
@@ -64,6 +67,11 @@
 
   [SettingsManager.sharedInstance addObserver:self
                                   forKeyPath:@"kbOpenAndPaste"
+                                     options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial)
+                                     context:NULL];
+  
+  [SettingsManager.sharedInstance addObserver:self
+                                  forKeyPath:@"font"
                                      options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial)
                                      context:NULL];
 
@@ -78,17 +86,19 @@
   scroll.translatesAutoresizingMaskIntoConstraints = NO;
   kbOpenBtn.translatesAutoresizingMaskIntoConstraints = NO;
   kbOpenPasteBtn.translatesAutoresizingMaskIntoConstraints = NO;
+  changeFontBtn.translatesAutoresizingMaskIntoConstraints = NO;
   container.translatesAutoresizingMaskIntoConstraints = NO;
 
   [container addSubview:scroll];
   [container addSubview:kbOpenBtn];
   [container addSubview:kbOpenPasteBtn];
+  [container addSubview:changeFontBtn];
 
   [NSLayoutConstraint activateConstraints:@[
     [scroll.topAnchor constraintEqualToAnchor:container.topAnchor constant:10],
     [scroll.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:10],
     [scroll.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-10],
-    [scroll.bottomAnchor constraintEqualToAnchor:kbOpenBtn.topAnchor constant:-10],
+    [scroll.bottomAnchor constraintEqualToAnchor:changeFontBtn.topAnchor constant:-10],
 
     [kbOpenBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:10],
     [kbOpenBtn.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-10],
@@ -97,6 +107,10 @@
     [kbOpenPasteBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-10],
     [kbOpenPasteBtn.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-10],
     [kbOpenPasteBtn.widthAnchor constraintEqualToConstant:140],
+
+    [changeFontBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:10],
+    [changeFontBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-10],
+    [changeFontBtn.bottomAnchor constraintEqualToAnchor:kbOpenBtn.topAnchor constant:-10],
   ]];
 
   NSViewController *vc = [[NSViewController alloc] init];
@@ -106,12 +120,20 @@
   self.popover.contentSize = CGSizeMake(300, 200);
   self.popover.behavior = NSPopoverBehaviorTransient;
   self.popover.contentViewController = vc;
+
+  [self updateButtonTitles]; // force load fonts & keybinds
 }
 
 - (void)setupMenu {
   NSMenu *main = [[NSMenu alloc] init];
   [self setupAppMenu:main];
   [self setupEditMenu:main];
+
+  NSFontManager *fm = NSFontManager.sharedFontManager;
+  NSMenuItem *fontItem = [[NSMenuItem alloc] init];
+  fontItem.submenu = [fm fontMenu:YES];
+  [main addItem:fontItem];
+
   NSApp.mainMenu = main;
 }
 
@@ -163,8 +185,14 @@
 }
 
 - (void)updateButtonTitles {
-  kbOpenBtn.title = [NSString stringWithFormat:@"Open: %@", SettingsManager.sharedInstance.kbOpen];
-  kbOpenPasteBtn.title = [NSString stringWithFormat:@"Open & Paste: %@", SettingsManager.sharedInstance.kbOpenAndPaste];
+  SettingsManager *sm = SettingsManager.sharedInstance;
+
+  kbOpenBtn.title = [NSString stringWithFormat:@"Open: %@", sm.kbOpen];
+  kbOpenPasteBtn.title = [NSString stringWithFormat:@"Open & Paste: %@", sm.kbOpenAndPaste];
+
+  NSLog(@"loaded font from SettingsManager: %@ %@", sm.fontName, sm.fontSize);
+  changeFontBtn.title = [NSString stringWithFormat:@"Font: %@ %@", sm.fontName, sm.fontSize];
+  self.field.font = [NSFont fontWithDescriptor:sm.font size:0.f];
 }
 
 - (void)changeKbOpen {
@@ -173,6 +201,28 @@
 
 - (void)changeKbOpenPaste {
   [self listenForKeybindWithSelector:@selector(setKbOpenAndPaste:) button:kbOpenPasteBtn];
+}
+
+- (void)showFontPanel {
+  NSLog(@"trying to show font panel");
+  [NSApp activateIgnoringOtherApps:YES];
+  NSFontManager *fm = [NSFontManager sharedFontManager];
+  fm.target = self;
+
+  [fm setSelectedFont:self.field.font isMultiple:NO];
+
+  NSFontPanel *fp = NSFontPanel.sharedFontPanel;
+  fp.worksWhenModal = YES;
+  [fm orderFrontFontPanel:self];
+}
+
+- (void)changeFont:(id)sender {
+  NSFont *newFont = [NSFontManager.sharedFontManager convertFont:self.field.font];
+  self.field.font = newFont;
+
+  SettingsManager *sm = SettingsManager.sharedInstance;
+  sm.font = newFont.fontDescriptor;
+  [sm save];
 }
 
 - (void)listenForKeybindWithSelector:(SEL)sel button:(NSButton *)button {
