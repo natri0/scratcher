@@ -7,6 +7,7 @@ inspired by a recent [post about a textarea widget for kde plasma](https://fosst
 - text area for all your text area needs
 - scrollable!
 - keybinds!! just open it, or open & paste the text from clipboard.
+- font picker! saved between restarts, ofc.
 
 ## default keybinds
 
@@ -17,7 +18,7 @@ changeable via the UI!
 
 ## screenshot
 
-![screenshot of the opened popup with a textarea and two buttons to change the keybinds](screenshot.png)
+![screenshot of the opened popup with a textarea, a button to change the font and two more buttons below it to change the keybinds](screenshot.png)
 
 ## building
 
